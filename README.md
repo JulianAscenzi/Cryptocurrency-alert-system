@@ -18,6 +18,22 @@ Para compilar y empaquetar:
 mvn clean package
 ```
 
+### API REST básica
+
+El prototipo expone una API REST para crear, consultar y cancelar alertas.
+
+Endpoints principales:
+
+- `POST /alerts`
+  - Crea una alerta nueva.
+  - Body JSON: `{ "symbol": "BTC", "targetPrice": 50000, "condition": "ABOVE" }`
+- `GET /alerts`
+  - Devuelve la lista de alertas activas.
+- `GET /alerts/{id}`
+  - Devuelve una alerta por su id.
+- `DELETE /alerts/{id}`
+  - Cancela una alerta activa.
+
 Si necesitas añadir nuevas extensiones a un proyecto existente, usa:
 
 ```bash
