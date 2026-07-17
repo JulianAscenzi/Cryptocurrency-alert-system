@@ -4,7 +4,6 @@ import com.cryptoalert.domain.model.AlertCondition;
 import com.cryptoalert.domain.model.AlertStatus;
 import com.cryptoalert.domain.model.CryptoAlert;
 import com.cryptoalert.domain.repository.CryptoAlertRepository;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

@@ -31,8 +31,8 @@ public class BinanceWebSocketPriceFeed {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MultiEmitterProcessor<PriceRecord> priceProcessor = MultiEmitterProcessor.create();
-
     private WebSocketClientConnection connection;
+
 
     public Multi<PriceRecord> priceStream() {
         return priceProcessor.toMulti();

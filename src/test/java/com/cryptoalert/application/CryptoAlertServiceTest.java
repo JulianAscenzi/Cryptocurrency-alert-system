@@ -4,7 +4,6 @@ import com.cryptoalert.domain.model.AlertCondition;
 import com.cryptoalert.domain.model.AlertStatus;
 import com.cryptoalert.domain.model.CryptoAlert;
 import com.cryptoalert.infrastructure.persistence.InMemoryCryptoAlertRepository;
-import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
