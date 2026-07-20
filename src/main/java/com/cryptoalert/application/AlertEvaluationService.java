@@ -4,6 +4,7 @@ import com.cryptoalert.domain.model.CryptoAlert;
 import com.cryptoalert.domain.model.PriceRecord;
 import com.cryptoalert.domain.repository.CryptoAlertRepository;
 import com.cryptoalert.infrastructure.websocket.BinanceWebSocketPriceFeed;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -65,26 +66,27 @@ public class AlertEvaluationService {
             return Uni.createFrom().voidItem();
         }
 
-        for (CryptoAlert alert : alerts) {
-            evaluateAlert(alert, priceRecord).await().indefinitely();
-        }
-        return Uni.createFrom().voidItem();
+        return Multi.createFrom().iterable(alerts)
+                .onItem().transformToUniAndMerge(alert -> evaluateAlert(alert, priceRecord))
+                .collect().asList()
+                .replaceWithVoid();
     }
 
     private Uni<Void> evaluateAlert(CryptoAlert alert, PriceRecord priceRecord) {
-        return Uni.createFrom().item(() -> {
-            try {
-                if (alert.checkTriggerCondition(priceRecord)) {
-                    alert.trigger(Instant.now());
-                    return repository.update(alert)
-                            .onItem().invoke(() -> notificationService.notifyTriggeredAlert(alert, priceRecord))
-                            .onFailure().recoverWithNull();
-                }
-            } catch (Exception ex) {
-                LOG.warn("Failed to evaluate alert {} for symbol {}", alert, resolveSymbol(priceRecord), ex);
-            }
-            return Uni.createFrom().voidItem();
-        }).flatMap(ignored -> ignored);
+        return Uni.createFrom().voidItem()
+                .onItem().transformToUni(ignored -> {
+                    try {
+                        if (alert.checkTriggerCondition(priceRecord)) {
+                            alert.trigger(Instant.now());
+                            return repository.update(alert)
+                                    .onItem().invoke(() -> notificationService.notifyTriggeredAlert(alert, priceRecord))
+                                    .onFailure().recoverWithNull();
+                        }
+                    } catch (Exception ex) {
+                        LOG.warn("Failed to evaluate alert {} for symbol {}", alert, resolveSymbol(priceRecord), ex);
+                    }
+                    return Uni.createFrom().voidItem();
+                });
     }
 
     private Uni<List<CryptoAlert>> findActiveAlertsBySymbol(String symbol) {

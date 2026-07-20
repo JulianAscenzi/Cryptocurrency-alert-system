@@ -9,8 +9,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.time.Instant;
 
 @ApplicationScoped
@@ -45,53 +43,21 @@ public class NotificationService {
     }
 
     private String resolveSymbol(CryptoAlert alert, PriceRecord priceRecord) {
-        Object value = readValue(alert, "getSymbol", "symbol");
-        if (value instanceof String symbol && !symbol.isBlank()) {
+        String symbol = alert != null ? alert.getSymbol() : null;
+        if (symbol != null && !symbol.isBlank()) {
             return symbol;
         }
-        Object priceValue = readValue(priceRecord, "getSymbol", "symbol");
-        return priceValue instanceof String symbolValue ? symbolValue : "UNKNOWN";
+
+        String priceRecordSymbol = priceRecord != null ? priceRecord.symbol() : null;
+        return priceRecordSymbol != null && !priceRecordSymbol.isBlank() ? priceRecordSymbol : "UNKNOWN";
     }
 
     private String resolveCondition(CryptoAlert alert) {
-        Object value = readValue(alert, "getCondition", "condition");
-        return value != null ? String.valueOf(value) : "unknown";
+        return alert != null && alert.getCondition() != null ? alert.getCondition().name() : "unknown";
     }
 
     private String resolvePriceValue(PriceRecord priceRecord) {
-        Object value = readValue(priceRecord, "getPrice", "price");
-        return value != null ? String.valueOf(value) : "n/a";
-    }
-
-    private Object readValue(Object target, String... names) {
-        if (target == null) {
-            return null;
-        }
-
-        for (String name : names) {
-            try {
-                Method getter = target.getClass().getMethod(name);
-                Object value = getter.invoke(target);
-                if (value != null) {
-                    return value;
-                }
-            } catch (ReflectiveOperationException ignored) {
-                // Try the next accessor name.
-            }
-
-            try {
-                Field field = target.getClass().getDeclaredField(name);
-                field.setAccessible(true);
-                Object value = field.get(target);
-                if (value != null) {
-                    return value;
-                }
-            } catch (ReflectiveOperationException ignored) {
-                // Try the next accessor name.
-            }
-        }
-
-        return null;
+        return priceRecord != null && priceRecord.price() != null ? priceRecord.price().toString() : "n/a";
     }
 
     private record WebhookPayload(String symbol, String price, String condition, Instant triggeredAt) {
