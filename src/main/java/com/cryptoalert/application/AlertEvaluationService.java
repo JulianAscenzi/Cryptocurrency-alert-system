@@ -35,7 +35,6 @@ public class AlertEvaluationService {
     void subscribeToPriceStream() {
         priceFeed.priceStream()
                 .onItem().invoke(priceRecord -> processPriceRecord(priceRecord)
-                        .onFailure().recoverWithNull()
                         .subscribe().with(
                                 ignored -> {
                                 },
@@ -56,8 +55,7 @@ public class AlertEvaluationService {
         }
 
         return findActiveAlertsBySymbol(symbol)
-                .flatMap(alerts -> evaluateAlerts(alerts, priceRecord))
-                .onFailure().recoverWithNull();
+                .flatMap(alerts -> evaluateAlerts(alerts, priceRecord));
     }
 
     private Uni<Void> evaluateAlerts(List<CryptoAlert> alerts, PriceRecord priceRecord) {
@@ -67,7 +65,14 @@ public class AlertEvaluationService {
         }
 
         return Multi.createFrom().iterable(alerts)
-                .onItem().transformToUniAndMerge(alert -> evaluateAlert(alert, priceRecord))
+                .onItem().transformToUniAndMerge(alert -> evaluateAlert(alert, priceRecord)
+                        .onFailure().invoke(failure -> LOG.warn(
+                                "Failed to process alert {} for price record {}",
+                                alert.getId(),
+                                priceRecord,
+                                failure
+                        ))
+                        .onFailure().recoverWithNull())
                 .collect().asList()
                 .replaceWithVoid();
     }
@@ -79,8 +84,12 @@ public class AlertEvaluationService {
                         if (alert.checkTriggerCondition(priceRecord)) {
                             alert.trigger(Instant.now());
                             return repository.update(alert)
-                                    .onItem().invoke(() -> notificationService.notifyTriggeredAlert(alert, priceRecord))
-                                    .onFailure().recoverWithNull();
+                                    .onFailure().invoke(failure -> LOG.warn(
+                                            "Failed to persist triggered alert {}",
+                                            alert.getId(),
+                                            failure
+                                    ))
+                                    .onItem().invoke(() -> notificationService.notifyTriggeredAlert(alert, priceRecord));
                         }
                     } catch (Exception ex) {
                         LOG.warn("Failed to evaluate alert {} for symbol {}", alert, resolveSymbol(priceRecord), ex);

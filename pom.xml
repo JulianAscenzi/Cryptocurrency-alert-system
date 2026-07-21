@@ -31,15 +31,15 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- RESTEasy Reactive for REST endpoints -->
+        <!-- Quarkus REST for REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <!-- Jackson serialization for JSON -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <!-- WebSockets Next for reactive WebSockets -->
         <dependency>
@@ -56,10 +56,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client</artifactId>
         </dependency>
-        <!-- REST Client Reactive for calling external APIs -->
+        <!-- REST Client for calling external APIs -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
         
         <!-- Test Dependencies -->

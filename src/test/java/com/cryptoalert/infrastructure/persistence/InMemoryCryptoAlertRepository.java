@@ -5,19 +5,11 @@ import com.cryptoalert.domain.model.CryptoAlert;
 import com.cryptoalert.domain.repository.CryptoAlertRepository;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * In-memory implementation of the {@link CryptoAlertRepository} port.
- *
- * <p>This bean is application-scoped and exposes reactive Mutiny wrappers over a
- * thread-safe {@link ConcurrentHashMap}.</p>
- */
-@ApplicationScoped
 public class InMemoryCryptoAlertRepository implements CryptoAlertRepository {
 
     private final ConcurrentHashMap<UUID, CryptoAlert> store = new ConcurrentHashMap<>();

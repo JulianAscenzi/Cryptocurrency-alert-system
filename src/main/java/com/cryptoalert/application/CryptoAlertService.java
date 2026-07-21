@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -23,7 +24,17 @@ public class CryptoAlertService {
     }
 
     public Uni<CryptoAlert> createAlert(String symbol, BigDecimal targetPrice, AlertCondition condition) {
-        CryptoAlert alert = CryptoAlert.createNew(symbol, targetPrice, condition);
+        if (symbol == null || symbol.trim().isBlank()) {
+            return Uni.createFrom().failure(new IllegalArgumentException("symbol is required"));
+        }
+        if (targetPrice == null || targetPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            return Uni.createFrom().failure(new IllegalArgumentException("targetPrice must be positive"));
+        }
+        if (condition == null) {
+            return Uni.createFrom().failure(new IllegalArgumentException("condition is required"));
+        }
+
+        CryptoAlert alert = CryptoAlert.createNew(symbol.trim().toUpperCase(Locale.ROOT), targetPrice, condition);
         return repository.save(alert);
     }
 

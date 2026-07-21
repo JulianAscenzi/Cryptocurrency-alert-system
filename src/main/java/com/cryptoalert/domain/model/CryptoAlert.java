@@ -2,6 +2,7 @@ package com.cryptoalert.domain.model;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -19,8 +20,8 @@ public class CryptoAlert {
 
     public CryptoAlert(UUID id, String symbol, BigDecimal targetPrice, AlertCondition condition, AlertStatus status, Instant createdAt, Instant triggeredAt) {
         this.id = Objects.requireNonNull(id, "Alert ID cannot be null");
-        this.symbol = Objects.requireNonNull(symbol, "Crypto symbol cannot be null").toUpperCase();
-        this.targetPrice = Objects.requireNonNull(targetPrice, "Target price cannot be null");
+        this.symbol = normalizeSymbol(symbol);
+        this.targetPrice = validateTargetPrice(targetPrice);
         this.condition = Objects.requireNonNull(condition, "Alert condition cannot be null");
         this.status = Objects.requireNonNull(status, "Alert status cannot be null");
         this.createdAt = Objects.requireNonNull(createdAt, "Creation timestamp cannot be null");
@@ -40,6 +41,22 @@ public class CryptoAlert {
             Instant.now(),
             null
         );
+    }
+
+    private static String normalizeSymbol(String symbol) {
+        String normalized = Objects.requireNonNull(symbol, "Crypto symbol cannot be null").trim();
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException("Crypto symbol cannot be blank");
+        }
+        return normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private static BigDecimal validateTargetPrice(BigDecimal targetPrice) {
+        BigDecimal value = Objects.requireNonNull(targetPrice, "Target price cannot be null");
+        if (value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Target price must be positive");
+        }
+        return value;
     }
 
     /**

@@ -12,7 +12,7 @@ class CryptoAlertTest {
 
     @Test
     void createNewInitializesActiveAlertWithGeneratedId() {
-        CryptoAlert alert = CryptoAlert.createNew("btc", new BigDecimal("50000"), AlertCondition.ABOVE);
+        CryptoAlert alert = CryptoAlert.createNew(" btc ", new BigDecimal("50000"), AlertCondition.ABOVE);
 
         assertNotNull(alert.getId());
         assertEquals("BTC", alert.getSymbol());
@@ -21,6 +21,16 @@ class CryptoAlertTest {
         assertEquals(AlertStatus.ACTIVE, alert.getStatus());
         assertNotNull(alert.getCreatedAt());
         assertNull(alert.getTriggeredAt());
+    }
+
+    @Test
+    void createNewRejectsBlankSymbol() {
+        assertThrows(IllegalArgumentException.class, () -> CryptoAlert.createNew(" ", new BigDecimal("50000"), AlertCondition.ABOVE));
+    }
+
+    @Test
+    void createNewRejectsNonPositiveTargetPrice() {
+        assertThrows(IllegalArgumentException.class, () -> CryptoAlert.createNew("BTC", BigDecimal.ZERO, AlertCondition.ABOVE));
     }
 
     @Test

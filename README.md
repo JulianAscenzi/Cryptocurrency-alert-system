@@ -43,13 +43,13 @@ This separation ensures long-term **testability** and **maintainability**.
   Fully non-blocking stack using Quarkus + Mutiny + Reactive PostgreSQL
 
 - 🔗 **Binance WebSocket Integration**  
-  Direct connection to Binance's public price feed without intermediaries
+  Direct connection to Binance combined trade streams for configured symbols
 
 - 📊 **Automatic Condition Evaluation**  
   Evaluation engine that triggers alerts when prices match the configured rules
 
-- 🛠️ **Complete REST API**  
-  CRUD endpoints to manage alerts with structured JSON responses
+- 🛠️ **REST API**  
+  Endpoints to create, list, fetch, and cancel alerts with structured JSON responses
 
 - 🧪 **Complete Test Suite**  
   Coverage across application, domain, and infrastructure layers
@@ -118,14 +118,14 @@ cd cryptocurrency-alert-system
 mvn clean install
 ```
 
-This command downloads all dependencies and compiles the project.
+This command downloads all dependencies, runs tests, and compiles the project. The default test run skips PostgreSQL-backed Quarkus integration tests unless `RUN_DB_TESTS=true` is set.
 
 #### 3️⃣ Configure the Database (Development)
 
-Quarkus provides **Dev Services**, which automatically start a PostgreSQL container:
+Quarkus provides **Dev Services**, which automatically starts a PostgreSQL container:
 
 ```bash
-# No additional configuration is required if Docker is installed
+# No additional configuration is required if Docker is installed and running
 # Quarkus will start a PostgreSQL instance automatically
 ```
 
@@ -169,8 +169,9 @@ java -jar target/cryptocurrency-alert-system-1.0.0-SNAPSHOT-runner.jar
 | `QUARKUS_DATASOURCE_REACTIVE_URL` | Reactive database connection URL | Dev Services auto | `postgresql://localhost:5432/crypto_alerts` |
 | `QUARKUS_DATASOURCE_USERNAME` | Database username | `postgres` | `postgres` |
 | `QUARKUS_DATASOURCE_PASSWORD` | Database password | `postgres` | `your_secure_password` |
-| `QUARKUS_HIBERNATE_REACTIVE_DATABASE_GENERATION` | DDL strategy | `update` (prod) | `create-drop` (dev) \| `update` (prod) |
-| `CRYPTO_BINANCE_WEBSOCKET_URL` | Binance WebSocket URL | `wss://stream.binance.com:9443/ws` | `wss://stream.binance.com:9443/ws` |
+| `QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION` | DDL strategy | `update` (prod) | `drop-and-create` (dev) \| `update` (prod) |
+| `CRYPTO_BINANCE_WEBSOCKET_URL` | Binance WebSocket base URL | `wss://stream.binance.com:9443` | `wss://stream.binance.com:9443` |
+| `CRYPTO_BINANCE_SYMBOLS` | Comma-separated symbols streamed from Binance | `BTCUSDT,ETHUSDT` | `BTCUSDT,ETHUSDT,SOLUSDT` |
 | `CRYPTO_BINANCE_API_URL` | Binance REST API URL | `https://api.binance.com` | `https://api.binance.com` |
 | `QUARKUS_LOG_LEVEL` | Global logging level | `INFO` | `DEBUG` \| `INFO` \| `WARN` |
 
@@ -184,10 +185,11 @@ QUARKUS_HTTP_PORT=8080
 QUARKUS_DATASOURCE_REACTIVE_URL=postgresql://localhost:5432/crypto_alerts
 QUARKUS_DATASOURCE_USERNAME=postgres
 QUARKUS_DATASOURCE_PASSWORD=your_secure_password_here
-QUARKUS_HIBERNATE_REACTIVE_DATABASE_GENERATION=update
+QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION=update
 
 # External API Configuration
-CRYPTO_BINANCE_WEBSOCKET_URL=wss://stream.binance.com:9443/ws
+CRYPTO_BINANCE_WEBSOCKET_URL=wss://stream.binance.com:9443
+CRYPTO_BINANCE_SYMBOLS=BTCUSDT,ETHUSDT
 CRYPTO_BINANCE_API_URL=https://api.binance.com
 
 # Logging
@@ -210,11 +212,13 @@ POST /alerts
 Content-Type: application/json
 
 {
-  "symbol": "BTC",
+  "symbol": "BTCUSDT",
   "targetPrice": 50000.00,
   "condition": "ABOVE"
 }
 ```
+
+`symbol` is trimmed and stored uppercase. Blank symbols and non-positive `targetPrice` values return `400 Bad Request`.
 
 ### List Active Alerts
 ```http
@@ -248,7 +252,7 @@ DELETE /alerts/{id}
 - [ ] Alert performance analysis
 
 ### 🔜 Phase 4: Scalability and Enterprise
-- [ ] Multi-currency support (not only BTC)
+- [ ] Dynamic symbol subscription management
 - [ ] Complex conditional alerts (AND/OR logic)
 - [ ] Rate limiting and authentication (OAuth2)
 - [ ] Kubernetes-ready deployment
@@ -261,6 +265,10 @@ DELETE /alerts/{id}
 ```bash
 # Run all tests
 mvn test
+
+# Run PostgreSQL-backed Quarkus repository and REST tests as well.
+# Requires Docker for Quarkus Dev Services or a configured PostgreSQL test database.
+RUN_DB_TESTS=true mvn test
 
 # Run tests with coverage report
 mvn test jacoco:report
@@ -291,7 +299,8 @@ src/
 │   │       └── CryptoAlertRepository.java
 │   └── infrastructure/      # Technical adapters
 │       ├── persistence/
-│       │   └── InMemoryCryptoAlertRepository.java
+│       │   ├── CryptoAlertEntity.java
+│       │   └── PostgresCryptoAlertRepository.java
 │       ├── rest/
 │       │   └── CryptoAlertResource.java
 │       └── websocket/

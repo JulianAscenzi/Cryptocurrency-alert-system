@@ -27,11 +27,23 @@ class CryptoAlertServiceTest {
 
     @Test
     void createAlertReturnsSavedAlert() {
-        CryptoAlert created = service.createAlert("btc", new BigDecimal("42000"), AlertCondition.ABOVE)
+        CryptoAlert created = service.createAlert(" btc ", new BigDecimal("42000"), AlertCondition.ABOVE)
                 .await().indefinitely();
 
         assertNotNull(created.getId());
         assertEquals("BTC", created.getSymbol());
+    }
+
+    @Test
+    void createAlertRejectsBlankSymbol() {
+        assertThrows(RuntimeException.class, () -> service.createAlert(" ", new BigDecimal("42000"), AlertCondition.ABOVE)
+                .await().indefinitely());
+    }
+
+    @Test
+    void createAlertRejectsNonPositiveTargetPrice() {
+        assertThrows(RuntimeException.class, () -> service.createAlert("BTC", BigDecimal.ZERO, AlertCondition.ABOVE)
+                .await().indefinitely());
     }
 
     @Test

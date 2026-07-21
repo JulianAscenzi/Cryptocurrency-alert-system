@@ -32,8 +32,15 @@ public class CryptoAlertResource {
         if (request == null || request.symbol() == null || request.targetPrice() == null || request.condition() == null) {
             return Uni.createFrom().failure(new BadRequestException("symbol, targetPrice and condition are required"));
         }
+        if (request.symbol().trim().isBlank()) {
+            return Uni.createFrom().failure(new BadRequestException("symbol is required"));
+        }
+        if (request.targetPrice().signum() <= 0) {
+            return Uni.createFrom().failure(new BadRequestException("targetPrice must be positive"));
+        }
 
         return service.createAlert(request.symbol(), request.targetPrice(), request.condition())
+                .onFailure(IllegalArgumentException.class).transform(BadRequestException::new)
                 .map(alert -> Response.status(Response.Status.CREATED).entity(alert).build());
     }
 

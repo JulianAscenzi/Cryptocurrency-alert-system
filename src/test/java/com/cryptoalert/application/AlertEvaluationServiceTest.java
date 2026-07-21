@@ -65,6 +65,22 @@ class AlertEvaluationServiceTest {
         assertEquals(1, notificationService.callCount.get());
     }
 
+    @Test
+    void shouldNotNotifyWhenTriggeredAlertUpdateFails() {
+        FailingUpdateRepository repository = new FailingUpdateRepository();
+        TrackingNotificationService notificationService = new TrackingNotificationService();
+        CryptoAlert alert = CryptoAlert.createNew("BTCUSDT", new BigDecimal("1000"), AlertCondition.ABOVE);
+        repository.save(alert).await().indefinitely();
+
+        AlertEvaluationService service = new AlertEvaluationService();
+        service.repository = repository;
+        service.notificationService = notificationService;
+
+        service.processPriceRecord(new PriceRecord("BTCUSDT", new BigDecimal("1001"), Instant.now())).await().indefinitely();
+
+        assertEquals(0, notificationService.callCount.get());
+    }
+
     private static final class TestPriceFeed extends BinanceWebSocketPriceFeed {
         private final Multi<PriceRecord> prices;
 
@@ -78,7 +94,7 @@ class AlertEvaluationServiceTest {
         }
     }
 
-    private static final class InMemoryCryptoAlertRepository implements CryptoAlertRepository {
+    private static class InMemoryCryptoAlertRepository implements CryptoAlertRepository {
         private final List<CryptoAlert> alerts = new ArrayList<>();
         private final List<CryptoAlert> updatedAlerts = new ArrayList<>();
 
@@ -128,6 +144,13 @@ class AlertEvaluationServiceTest {
 
         private boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             return latch.await(timeout, unit);
+        }
+    }
+
+    private static final class FailingUpdateRepository extends InMemoryCryptoAlertRepository {
+        @Override
+        public Uni<Void> update(CryptoAlert alert) {
+            return Uni.createFrom().failure(new IllegalStateException("database unavailable"));
         }
     }
 
